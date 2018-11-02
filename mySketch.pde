@@ -11,25 +11,82 @@ Controls:
 Derived from Jason Labbe's open source jasonlabbe3d.com
   
 */
-
+import processing.video.*;
 
 PImage img;
-int imgIndex = 0;
+PImage camImg;
+Capture cam;
+int distance;
+boolean looping;
+
+void setup() {
+  size(1024, 986);
+  //size(2048, 1024);
+  
+  background(255);
+  loop();
+  frameCount = 0;
+  looping = true;
+  
+  img = loadImage("MonetWaterlily.jpg");
+  img.loadPixels();
+  String[] cameras = Capture.list();
+  
+  if (cameras.length == 0) {
+    println("There are no cameras available for capture.");
+    exit();
+  } else {
+    println("Available cameras:");
+    for (int i = 0; i < cameras.length; i++) {
+      println( cameras[i]);
+    }
+    
+    // The camera can be initialized directly using an 
+    // element from the array returned by list():
+    cam = new Capture(this, cameras[0]);
+    cam.start();     
+  }     
+}
 
 
-//void nextImage() {
-//  background(255);
-//  loop();
-//  frameCount = 0;
-  
-//  img = loadImage(imgNames[imgIndex]);
-//  img.loadPixels();
-  
-//  imgIndex += 1;
-//  if (imgIndex >= imgNames.length) {
-//    imgIndex = 0;
+//void draw(){
+//  if (cam.available() == true) {
+//    cam.read();
+//    //println("has camera");
 //  }
+//  //println("next");
+//  camImg = createImage(width, height, RGB);
+//  camImg.copy(cam, 0, 0, cam.width, cam.height, 0, 0, cam.width, cam.height);
+  
+//  int finalIndex = firstPixel();
+//  println("final Index is " + finalIndex);
+//  distance = finalIndex;
+//  background(finalIndex);
+
+//  //image(cam, 0, 0);
 //}
+
+int firstPixel(){
+   int index = (cam.height/2)*cam.width;
+   /* loop through the cam image in the mid point */
+    for (int x = 0; x < cam.width; x+=1) {
+       color pixelColor = cam.pixels[index];
+       //pixelColor = color(red(pixelColor), green(pixelColor), blue(pixelColor), 100);
+       float avgColor = (red(pixelColor) + green(pixelColor) + blue(pixelColor))/3;
+       
+       if(avgColor<100){
+        //println("avgColor is " + avgColor);
+        println("return " + x);
+        //return index/3;
+        return x;
+       }
+       
+       index++;
+     }
+
+   return cam.width;  
+}
+
 
 
 void paintStroke(float strokeLength, color strokeColor, int strokeThickness) {
@@ -61,27 +118,31 @@ void paintStroke(float strokeLength, color strokeColor, int strokeThickness) {
     
     stroke(newColor);
     strokeWeight((int)random(0, 3));
-    curve(tangent1, -stepLength*2, z-strokeThickness/2, -stepLength*random(0.9, 1.1), z-strokeThickness/2, stepLength*random(0.9, 1.1), tangent2, stepLength*2);
+    //curve(tangent1, -stepLength*2, z-strokeThickness/2, -stepLength*random(0.9, 1.1), 
+    //      z-strokeThickness/2, stepLength*random(0.9, 1.1), tangent2, stepLength*2);
+    
+    curve(tangent1, -stepLength*2, z-strokeThickness/2, -stepLength, 
+          z-strokeThickness/2, stepLength, tangent2, stepLength*2);
     
     z += 1;
   }
 }
 
 
-void setup() {
-  //size(1024, 986);
-  size(2048, 2048);
-  
-  background(255);
-  loop();
-  frameCount = 0;
-  
-  img = loadImage("MonetWaterlily.jpg");
-  img.loadPixels();
-}
+
 
 
 void draw() {
+  if (cam.available() == true) {
+    cam.read();
+  }
+  camImg = createImage(width, height, RGB);
+  camImg.copy(cam, 0, 0, cam.width, cam.height, 0, 0, cam.width, cam.height);
+  
+  int finalIndex = firstPixel();
+  println("final Index is " + finalIndex);
+  distance = finalIndex;
+  
   translate(width/2, height/2);
   
   int index = 0;
@@ -91,34 +152,55 @@ void draw() {
       int odds = (int)random(20000);
       
       if (odds < 1) {
-        color pixelColor = img.pixels[index];
+        color pixelColor = camImg.pixels[index];
         pixelColor = color(red(pixelColor), green(pixelColor), blue(pixelColor), 100);
         
         pushMatrix();
         translate(x-img.width/2, y-img.height/2);
         rotate(radians(random(-90, 90)));
         
-        // Paint by layers from rough strokes to finer details
-        if (frameCount < 20) {
+        
+        /* Paint by layers from rough strokes to finer details */
+        /* strokeLength, color strokeColor, int strokeThickness */
+        if (distance < 50) {
           // Big rough strokes
-          paintStroke(random(150, 250), pixelColor, (int)random(20, 40));
-        } else if (frameCount < 50) {
+          paintStroke(random(30, 50), pixelColor, (int)random(20, 30));
+        } else if (distance < 150) {
           // Thick strokes
-          paintStroke(random(75, 125), pixelColor, (int)random(8, 12));
-        } else if (frameCount < 300) {
+          paintStroke(random(10, 20), pixelColor, (int)random(8, 10));
+        } else if (distance < 300) {
           // Small strokes
-          paintStroke(random(30, 60), pixelColor, (int)random(1, 4));
-        } else if (frameCount < 350) {
+          paintStroke(random(5, 15), pixelColor, (int)random(5, 10));
+        } else if (distance < 450) {
           // Big dots
-          paintStroke(random(5, 20), pixelColor, (int)random(5, 15));
-        } else if (frameCount < 600) {
+          paintStroke(random(3, 10), pixelColor, (int)random(3, 5));
+        } else if (distance < 650) {
           // Small dots
-          paintStroke(random(1, 10), pixelColor, (int)random(1, 7));
-        }
-        else if (frameCount < 1000) {
+          paintStroke(random(1, 7), pixelColor, (int)random(1, 7));
+        } else if (distance < 1000) {
           // Small dots
-          paintStroke(random(1, 10), pixelColor, (int)random(1, 3));
+          paintStroke(random(1, 3), pixelColor, (int)random(1, 3));
         }
+        
+        //if (distance < 50) {
+        //  // Big rough strokes
+        //  paintStroke(random(150, 250), pixelColor, (int)random(20, 40));
+        //} else if (distance < 150) {
+        //  // Thick strokes
+        //  paintStroke(random(75, 125), pixelColor, (int)random(8, 12));
+        //} else if (distance < 300) {
+        //  // Small strokes
+        //  paintStroke(random(30, 60), pixelColor, (int)random(1, 4));
+        //} else if (distance < 450) {
+        //  // Big dots
+        //  paintStroke(random(5, 20), pixelColor, (int)random(5, 15));
+        //} else if (distance < 650) {
+        //  // Small dots
+        //  paintStroke(random(1, 10), pixelColor, (int)random(1, 7));
+        //} else if (distance < 1000) {
+        //  // Small dots
+        //  paintStroke(random(1, 10), pixelColor, (int)random(1, 3));
+        //}
         
         popMatrix();
       }
@@ -127,7 +209,20 @@ void draw() {
     }
   }
   
-  if (frameCount > 1000) {
-    noLoop();
-  }
+  //if (frameCount > 900) {
+  //  println("done");
+  //  noLoop();
+  //}
+}
+
+void mouseClicked() {
+    //  println("done");
+    //noLoop();
+    if (looping){
+      looping = false;
+      noLoop();
+    }else{
+      looping = true;
+      loop();
+    }
 }
